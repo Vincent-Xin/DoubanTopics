@@ -48,11 +48,12 @@ class DoubanTopicPipeline(object):
         value_holders = ', '.join(['%s'] * len(dict_data))
         if isinstance(item, TopicItemsItem):
             if dict_data['author'] and dict_data['topic']:
-                updater = 'collect_count=%s'
-                params = tuple(dict_data.values()) + tuple(dict_data['collect_count'])
-            else:
                 updater = ', '.join([f'{key}=%s' for key in dict_data.keys()][1:-1])
                 params = tuple(dict_data.values()) + tuple(dict_data.values())[1:-1]
+            else:
+                updater = 'collect_count=%s'
+                param_deal = list(dict_data.values()) + [dict_data['collect_count']]
+                params = tuple(param_deal)
         else:
             updater = ', '.join([f'{key}=%s' for key in dict_data.keys()][1:])
             params = tuple(dict_data.values()) + tuple(dict_data.values())[1:]
@@ -74,7 +75,7 @@ class DoubanUserPipeline(object):
     def open_spider(self, spider):
         self.client = pymongo.MongoClient(self.mongo_host)
         self.db = self.client[self.db_name]
-        self.collection = self.db[spider.name]
+        self.collection = self.db['douban_users']
 
     def close_spider(self, spider):
         self.client.close()
@@ -91,6 +92,3 @@ class DoubanUserPipeline(object):
             loop = asyncio.get_event_loop()
             loop.run_until_complete(do_insert())
         return item
-
-
-    
