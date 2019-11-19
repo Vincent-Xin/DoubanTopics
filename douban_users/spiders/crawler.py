@@ -15,13 +15,13 @@ class CrawlerSpider(CrawlSpider):
     start_urls = ['https://www.douban.com/gallery/all', ]
 
     allow_get_person_urls = (
-        'note/732089483/?type=rec#sep', 'note/732089483/?type=like#sep',
-        'note/732089483/?type=collect#sep', 'note/732089483/?type=donate#sep',
-        'people/152467430/status/2534401953/?tab=reshare#sep', 'people/152467430/status/2534401953/?tab=like#sep',
-        'people/152467430/status/2534401953/?tab=collect#sep',
+        'note/\d+/\?type=rec#sep', 'note/\d+/\?type=like#sep',
+        'note/\d+/\?type=collect#sep', 'note/\d+/\?type=donate#sep',
+        'people/\d+/status/\d+/\?tab=reshare#sep', 'people/\d+/status/\d+/\?tab=like#sep',
+        'people/\d+/status/\d+/\?tab=collect#sep','/gallery/topic/\d+/',
     )
     allow_person_urls = (
-        '/people/39523317/', '/people/50177428',
+        '/people/\d+/', '/people/\d+',
     )
     allow_item_urls = (
         'note/\d+/', 'note/\d+', 'people/\d+/status/\d+', 'people/\d+/status/\d+/',
