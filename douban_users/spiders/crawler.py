@@ -9,13 +9,10 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule
 from douban_users.items import TopicGalleriesItem, TopicsItem, TopicItemsItem, ItemDownloader
 
-
 class CrawlerSpider(CrawlSpider):
     name = 'crawler'
     allowed_domains = ['douban.com', 'www.douban.com', 'm.douban.com']
     start_urls = ['https://www.douban.com/gallery/all', ]
-
-    step = 30
 
     allow_get_person_urls = (
         'note/732089483/?type=rec#sep', 'note/732089483/?type=like#sep',
@@ -31,9 +28,9 @@ class CrawlerSpider(CrawlSpider):
         'doubanapp/dispatch?uri=/status/2534401953/', 'doubanapp/dispatch?uri=/note/732089483/',
     )
     rules = (
-        Rule(LinkExtractor(allow=allow_get_person_urls), follow=True),
-        Rule(LinkExtractor(allow=allow_person_urls), callback='parse_person', follow=True, process_request='add_cookie'),
-        Rule(LinkExtractor(allow=allow_item_urls), callback='parse_item',follow=True),
+        Rule(LinkExtractor(allow=allow_get_person_urls), follow=True,),
+        Rule(LinkExtractor(allow=allow_person_urls), callback='parse_person', follow=True, process_request='add_cookie',),
+        Rule(LinkExtractor(allow=allow_item_urls), callback='parse_item',follow=True,),
     )
 
     def parse_start_url(self, response):
@@ -47,7 +44,7 @@ class CrawlerSpider(CrawlSpider):
             topic_count = int(re.search('\((\d+)\)', galleries_text[1]).group(1))
             galleries_item['topic_count'] = topic_count
             yield galleries_item
-            step = self.step
+            step = 30
             for s in range(0, topic_count, step):
                 gallery_json_url = f'https://www.douban.com/j/gallery/topics?count={step}&start={s}&all=1&column_id={gallery_id}'
                 yield http.Request(url=gallery_json_url, callback=self.parse_gallery)
@@ -78,7 +75,7 @@ class CrawlerSpider(CrawlSpider):
     def get_json_topic(self, response):
         topic_id = response.meta['topicid']
         post_count = response.meta['post_count']
-        step = self.step
+        step = 30
         for s in range(0, post_count, step):
             headers = {
                 # 'Cookie': 'bid=NulHfSznh4Q; douban-fav-remind=1; _vwo_uuid_v2=DC7E299AC0DCAD57725551FB3E9BC52E6|79770cc69479b99098ad9e06c26a2748; push_doumail_num=0; gr_user_id=8ba9f9a6-9872-4f54-9e64-59e2e2ca590f; douban-profile-remind=1; viewed="30175598"; ct=y; dbcl2="51476394:C+2jKwPVY1c"; ck=b_lM; push_noty_num=0; loc-last-index-location-id="108296"; ll="108296"; ap_v=0,6.0',
@@ -100,9 +97,9 @@ class CrawlerSpider(CrawlSpider):
                     topicitem_item['id'] = f'{item["target"]["type"]}-{target["id"]}'
                     topicitem_item['title_or_abstract'] = target.get('title', item['abstract'])
                     topicitem_item['topic'] = int(item['topic']['id'])
-                    topicitem_item['author'] = target['author']['id']
+                    topicitem_item['author'] = target.get('author',{'id':1000000}).get('id')
                     topicitem_item['create_time'] = target['create_time']
-                    topicitem_item['status_up_count'] = target['like_count']
+                    topicitem_item['status_up_count'] = target.get('like_count',0)
                     topicitem_item['comment_count'] = target['comments_count']
                     topicitem_item['share_count'] = target['reshares_count']
                     topicitem_item['collect_count'] = 0
@@ -164,7 +161,7 @@ class CrawlerSpider(CrawlSpider):
         item_user['common_with_me'] = int(''.join(filter(str.isdigit, response.css('div#common>h2::text').get(default='0'))))
         return item_user
 
-    def add_cookies(self, request, response):
+    def add_cookie(self, request, response):
         my_cookies = 'bid=NulHfSznh4Q; douban-fav-remind=1; _vwo_uuid_v2=DC7E299AC0DCAD57725551FB3E9BC52E6|79770cc69479b99098ad9e06c26a2748; push_doumail_num=0; gr_user_id=8ba9f9a6-9872-4f54-9e64-59e2e2ca590f; douban-profile-remind=1; viewed="30175598"; ct=y; dbcl2="51476394:C+2jKwPVY1c"; ck=b_lM; push_noty_num=0; loc-last-index-location-id="108296"; ll="108296"; ap_v=0,6.0'
         request.headers['Cookie'] = my_cookies
 
@@ -180,26 +177,4 @@ class CrawlerSpider(CrawlSpider):
         # 获取文章收藏数
         # return item
 
-    # item_author = {}
-    # item_author['_id'] = target['author']['id'].strip()
-    # item_author['name'] = target['author']['name']
-    # item_author['uid'] = target['author']['uid']
-    # item_author['reg_time'] = target['author']['reg_time']
-    # item_author['location'] = {}
-    # item_author['location']['city_id'] = target['author']['loc']['id']
-    # item_author['location']['city'] = target['author']['loc']['name']
-    # # item_author['article_nums'] = 1
-    # # item_author['topic_nums'] = 0
-    # yield item_author
-
-    # topic_author = {}
-    # topic_author['_id'] = items[0]['topic']['creator']['id'].strip()
-    # topic_author['name'] = items[0]['topic']['creator']['name']
-    # topic_author['uid'] = items[0]['topic']['creator']['uid']
-    # topic_author['reg_time'] = items[0]['topic']['creator']['reg_time']
-    # topic_author['location'] = {}
-    # topic_author['location']['city_id'] = items[0]['topic']['creator']['loc']['id']
-    # topic_author['location']['city'] = items[0]['topic']['creator']['loc']['name']
-    # # topic_author['topic_nums'] = 1
-    # # topic_author['article_nums'] = 0
-    # yield topic_author
+    
