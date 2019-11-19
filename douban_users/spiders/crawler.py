@@ -74,7 +74,7 @@ class CrawlerSpider(CrawlSpider):
         for s in range(0, post_count, step):
             topic_json_url = f'https://m.douban.com/rexxar/api/v2/gallery/topic/{topic_id}/items?sort=all&start={s}&count={step}'
             # topic_json_url = f'https://m.douban.com/rexxar/api/v2/gallery/topic/{topic_id}/items?sort=hot&start={s}&count={step}&&guest_only=1&ck=b_lM'
-            yield http.Request(url=topic_json_url, callback=self.parse_topic, meta=response.meta, headers=headers)
+            yield http.Request(url=topic_json_url, callback=self.parse_topic, meta=response.meta)
 
     def parse_topic(self, response):
         json_response = json.loads(response.text)
@@ -97,7 +97,7 @@ class CrawlerSpider(CrawlSpider):
         else:
             time.sleep(10)
             topic_id = response.meta['topicid']
-            yield http.Request(url=response.url, callback=self.parse_topic, headers=headers)
+            yield http.Request(url=response.url, callback=self.parse_topic)
 
     def parse_item(self, response):
         # 解析文章
