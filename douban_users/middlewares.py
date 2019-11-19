@@ -116,14 +116,16 @@ class DoubanTopicDownloaderMiddleware(object):
 
     def process_request(self, request, spider):
         request.headers['User-Agent'] = self.headers[choice(range(len(self.headers)))]
-        # request.headers['Accept-Encoding'] = 'gzip, deflate, br'
-        # request.headers['Connection'] = 'keep-alive',
-        # request.headers['Content-Type'] = 'application/x-www-form-urlencoded'
-        # request.headers['Host'] = ''
-        request.headers['Origin'] = 'https://www.douban.com'
-        request.headers['Referer'] = 'https://www.douban.com/'
-        request.headers['Sec-Fetch-Mode'] = 'cors'
-        request.headers['Sec-Fetch-Site'] = 'same-site'
+        if 'rexxar/api/v2/gallery/topic' in request.url:
+            topic_id = request.meta['topicid']
+#             request.headers['Cookie'] = my_cookies
+            request.headers['Connection'] = 'keep-alive'
+            request.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+            request.headers['Host'] = 'm.douban.com'
+            request.headers['Origin'] = 'https://www.douban.com'
+            request.headers['Referer'] = f'https://www.douban.com/gallery/topic/{topic_id}/?=undefined&sort=new'
+            request.headers['Sec-Fetch-Mode'] = 'cors'
+            request.headers['Sec-Fetch-Site'] = 'same-site'
 
 class RandomProxyDownloaderMiddleware(object):
     #动态设置ip代理
