@@ -7,7 +7,7 @@ import scrapy
 from scrapy import http
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule
-from douban_users.items import TopicGalleriesItem, TopicsItem, TopicItemsItem, ItemDownloader
+from douban_users.items import TopicGalleriesItem, TopicsItem, TopicItemsItem, ItemDownloader, DoubanUsersItem
 
 class CrawlerSpider(CrawlSpider):
     name = 'crawler'
@@ -15,22 +15,16 @@ class CrawlerSpider(CrawlSpider):
     start_urls = ['https://www.douban.com/gallery/all', ]
 
     allow_get_person_urls = (
-        'note/\d+/\?type=rec#sep', 'note/\d+/\?type=like#sep',
-        'note/\d+/\?type=collect#sep', 'note/\d+/\?type=donate#sep',
-        'people/\d+/status/\d+/\?tab=reshare#sep', 'people/\d+/status/\d+/\?tab=like#sep',
-        'people/\d+/status/\d+/\?tab=collect#sep','/gallery/topic/\d+/',
+        'note/\d+',
+        'people/\d+/status/\d+',
+        '/gallery/topic/\d+',
     )
     allow_person_urls = (
-        '/people/\d+/', '/people/\d+',
-    )
-    allow_item_urls = (
-        'note/\d+/', 'note/\d+', 'people/\d+/status/\d+', 'people/\d+/status/\d+/',
-        'doubanapp/dispatch?uri=/status/2534401953/', 'doubanapp/dispatch?uri=/note/732089483/',
+        '/people/\d+',
     )
     rules = (
         Rule(LinkExtractor(allow=allow_get_person_urls), follow=True,),
-        Rule(LinkExtractor(allow=allow_person_urls), callback='parse_person', follow=True, process_request='add_cookie',),
-        Rule(LinkExtractor(allow=allow_item_urls), callback='parse_item',follow=True,),
+        Rule(LinkExtractor(allow=allow_person_urls,), callback='parse_person', follow=True,),
     )
 
     def parse_start_url(self, response):
@@ -65,6 +59,7 @@ class CrawlerSpider(CrawlSpider):
             creator_id = topic.get('creator_id')
             topic_item['topic_creator'] = int(creator_id) if creator_id else 1000000
             yield topic_item
+            
             topic_url = topic['url']
             topic_meta = {
                 'topicid': topic_item['id'],
@@ -77,12 +72,7 @@ class CrawlerSpider(CrawlSpider):
         post_count = response.meta['post_count']
         step = 30
         for s in range(0, post_count, step):
-            headers = {
-                # 'Cookie': 'bid=NulHfSznh4Q; douban-fav-remind=1; _vwo_uuid_v2=DC7E299AC0DCAD57725551FB3E9BC52E6|79770cc69479b99098ad9e06c26a2748; push_doumail_num=0; gr_user_id=8ba9f9a6-9872-4f54-9e64-59e2e2ca590f; douban-profile-remind=1; viewed="30175598"; ct=y; dbcl2="51476394:C+2jKwPVY1c"; ck=b_lM; push_noty_num=0; loc-last-index-location-id="108296"; ll="108296"; ap_v=0,6.0',
-                # 'Cookie': 'bid=NulHfSznh4Q; douban-fav-remind=1; _vwo_uuid_v2=DC7E299AC0DCAD57725551FB3E9BC52E6|79770cc69479b99098ad9e06c26a2748; push_doumail_num=0; gr_user_id=8ba9f9a6-9872-4f54-9e64-59e2e2ca590f; douban-profile-remind=1; viewed="30175598"; ct=y; dbcl2="51476394:C+2jKwPVY1c"; push_noty_num=0; loc-last-index-location-id="108296"; ll="108296"; ap_v=0,6.0; ck=b_lM; frodotk="6d334efef6796bec4799ecfce36c43c4"',
-                'Referer': f'https://www.douban.com/gallery/topic/{topic_id}/',
-            }
-            topic_json_url = f'https://m.douban.com/rexxar/api/v2/gallery/topic/{topic_id}/items?sort=new&start={s}&count={step}'
+            topic_json_url = f'https://m.douban.com/rexxar/api/v2/gallery/topic/{topic_id}/items?sort=all&start={s}&count={step}'
             # topic_json_url = f'https://m.douban.com/rexxar/api/v2/gallery/topic/{topic_id}/items?sort=hot&start={s}&count={step}&&guest_only=1&ck=b_lM'
             yield http.Request(url=topic_json_url, callback=self.parse_topic, meta=response.meta, headers=headers)
 
@@ -107,12 +97,6 @@ class CrawlerSpider(CrawlSpider):
         else:
             time.sleep(10)
             topic_id = response.meta['topicid']
-            headers = {
-                # 'Cookie': 'bid=NulHfSznh4Q; douban-fav-remind=1; _vwo_uuid_v2=DC7E299AC0DCAD57725551FB3E9BC52E6|79770cc69479b99098ad9e06c26a2748; push_doumail_num=0; gr_user_id=8ba9f9a6-9872-4f54-9e64-59e2e2ca590f; douban-profile-remind=1; viewed="30175598"; ct=y; dbcl2="51476394:C+2jKwPVY1c"; push_noty_num=0; loc-last-index-location-id="108296"; ll="108296"; ck=b_lM; ap_v=0,6.0; frodotk="88255c7fc844904b9870157f58cdb0e1"',
-                # 'Cookie': 'bid=NulHfSznh4Q; douban-fav-remind=1; _vwo_uuid_v2=DC7E299AC0DCAD57725551FB3E9BC52E6|79770cc69479b99098ad9e06c26a2748; push_doumail_num=0; gr_user_id=8ba9f9a6-9872-4f54-9e64-59e2e2ca590f; douban-profile-remind=1; viewed="30175598"; ct=y; dbcl2="51476394:C+2jKwPVY1c"; ck=b_lM; push_noty_num=0; loc-last-index-location-id="108296"; ll="108296"; ap_v=0,6.0',
-                # 'Cookie': 'bid=NulHfSznh4Q; douban-fav-remind=1; _vwo_uuid_v2=DC7E299AC0DCAD57725551FB3E9BC52E6|79770cc69479b99098ad9e06c26a2748; push_doumail_num=0; gr_user_id=8ba9f9a6-9872-4f54-9e64-59e2e2ca590f; douban-profile-remind=1; viewed="30175598"; ct=y; dbcl2="51476394:C+2jKwPVY1c"; push_noty_num=0; loc-last-index-location-id="108296"; ll="108296"; ap_v=0,6.0; ck=b_lM; frodotk="6d334efef6796bec4799ecfce36c43c4"',
-                'Referer': f'https://www.douban.com/gallery/topic/{topic_id}/',
-            }
             yield http.Request(url=response.url, callback=self.parse_topic, headers=headers)
 
     def parse_item(self, response):
@@ -159,15 +143,7 @@ class CrawlerSpider(CrawlSpider):
         item_user['relationship']['following'] = int(''.join(filter(str.isdigit, response.css('div.aside>.rev-link>a::text').get(default='0'))))
         item_user['relationship']['follower'] = int(response.css('div.aside #friend>h2 a::text').get(default='0').strip()[2:])
         item_user['common_with_me'] = int(''.join(filter(str.isdigit, response.css('div#common>h2::text').get(default='0'))))
-        return item_user
-
-    def add_cookie(self, request, response):
-        my_cookies = 'bid=NulHfSznh4Q; douban-fav-remind=1; _vwo_uuid_v2=DC7E299AC0DCAD57725551FB3E9BC52E6|79770cc69479b99098ad9e06c26a2748; push_doumail_num=0; gr_user_id=8ba9f9a6-9872-4f54-9e64-59e2e2ca590f; douban-profile-remind=1; viewed="30175598"; ct=y; dbcl2="51476394:C+2jKwPVY1c"; ck=b_lM; push_noty_num=0; loc-last-index-location-id="108296"; ll="108296"; ap_v=0,6.0'
-        request.headers['Cookie'] = my_cookies
-
-    def process_request(self, request, response):
-        pass
-
+        yield item_user
 
     # def parse_item(self, response):
         # item = {}
