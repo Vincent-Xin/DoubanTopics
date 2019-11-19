@@ -82,13 +82,7 @@ class DoubanUserPipeline(object):
 
     def process_item(self, item, spider):
         if isinstance(item, dict):
-            # user = self.collection.find_one({'_id':item['_id']})
-            # insert_result = self.collection.insert_one(item) if not user else "此user已经存在！"
-
-            async def do_insert():
-                user = self.collection.find_one({'_id': item['_id']})
-                insert_result = await self.collection.insert_one(item) if not user else "此user已经存在！"
-
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(do_insert())
+            user = self.collection.find_one({'id': item['id']})
+            if not user:
+                result = self.collection.insert_one(item)
         return item
