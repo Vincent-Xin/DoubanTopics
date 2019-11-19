@@ -97,7 +97,7 @@ ITEM_PIPELINES = {
 MYSQL_HOST = 'localhost'
 MYSQL_DBNAME = 'python_spider'
 MYSQL_USER = 'root'
-MYSQL_PASSWORD = 'xinyuanchang'
+MYSQL_PASSWORD = '123456'
 MYSQL_PORT = 3306
 
 MONGODB_HOST = 'mongodb://localhost:27017/'
