@@ -22,9 +22,14 @@ class CrawlerSpider(CrawlSpider):
     allow_person_urls = (
         '/people/\d+',
     )
+#     allow_item_urls = (
+#         'note/\d+', 'people/\d+/status/\d+',
+#         'doubanapp/dispatch?uri=/status/\d+', 'doubanapp/dispatch?uri=/note/\d+/',
+#     )
     rules = (
         Rule(LinkExtractor(allow=allow_get_person_urls), follow=True,),
         Rule(LinkExtractor(allow=allow_person_urls,), callback='parse_person', follow=True,),
+#         Rule(LinkExtractor(allow=allow_item_urls), callback='parse_item',follow=True,),
     )
 
     def parse_start_url(self, response):
@@ -99,22 +104,22 @@ class CrawlerSpider(CrawlSpider):
             topic_id = response.meta['topicid']
             yield http.Request(url=response.url, callback=self.parse_topic)
 
-    def parse_item(self, response):
-        # 解析文章
-        # 获取文章收藏数
-        item_loader = ItemDownloader(item=TopicItemsItem(), response=response)
-        item_loader.add_css('id', 'div.note-container::id')
-        item_loader.add_value('title_or_abstract', '')  # EMPTY
-        item_loader.add_value('topic', 0)
-        item_loader.add_value('author', 0)
-        item_loader.add_value('create_time', '0000-00-00')
-        item_loader.add_value('status_up_count', 0)
-        item_loader.add_value('comment_count', 0)
-        item_loader.add_value('share_count', 0)
-        item_loader.add_css('collect_count', 'div.action-collect>a>span.react-num::text')
+#     def parse_item(self, response):
+#         # 解析文章
+#         # 只获取一个文章收藏数，可以舍弃
+#         item_loader = ItemDownloader(item=TopicItemsItem(), response=response)
+#         item_loader.add_css('id', 'div.note-container::id')
+#         item_loader.add_value('title_or_abstract', '')  # EMPTY
+#         item_loader.add_value('topic', 0)
+#         item_loader.add_value('author', 0)
+#         item_loader.add_value('create_time', '0000-00-00')
+#         item_loader.add_value('status_up_count', 0)
+#         item_loader.add_value('comment_count', 0)
+#         item_loader.add_value('share_count', 0)
+#         item_loader.add_css('collect_count', 'div.action-collect>a>span.react-num::text')
 
-        topicitem_item = item_loader.load_item()
-        return topicitem_item
+#         topicitem_item = item_loader.load_item()
+#         return topicitem_item
 
     def parse_person(self,response):
         # 解析用户主页，获取用户信息
@@ -150,7 +155,6 @@ class CrawlerSpider(CrawlSpider):
         # item['domain_id'] = response.xpath('//input[@id="sid"]/@value').get()
         # item['name'] = response.xpath('//div[@id="name"]').get()
         # item['description'] = response.xpath('//div[@id="description"]').get()
-        # 获取文章收藏数
         # return item
 
     
