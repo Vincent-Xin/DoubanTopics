@@ -14,7 +14,7 @@ from douban_users.items import DoubanUsersItem, TopicItemsItem, TopicsItem, Topi
 
 
 class DoubanTopicPipeline(object):
-
+    '''话题数据存储在MySQL，这是一个总的，但已经分别针对item写了pipeline'''
     def __init__(self, dbpool):
         self.dbpool = dbpool
 
@@ -48,6 +48,7 @@ class DoubanTopicPipeline(object):
         keys = ', '.join(dict_data.keys())
         value_holders = ', '.join(['%s'] * len(dict_data))
         # if isinstance(item, TopicItemsItem):
+        #   # 只为添加一收藏数，无甚用，可弃之
         #     if dict_data['author'] and dict_data['topic']:
         #         updater = ', '.join([f'{key}=%s' for key in dict_data.keys()][1:-1])
         #         params = tuple(dict_data.values()) + tuple(dict_data.values())[1:-1]
@@ -67,7 +68,7 @@ class DoubanTopicPipeline(object):
 
 
 class DoubanTopicItemMongoPipeline(object):
-
+    '''用户发布的广播日记等，存储在mongodb中'''
     @classmethod
     def from_settings(cls, settings):
         cls.mongo_host = settings['MONGODB_HOST']
@@ -100,7 +101,7 @@ class DoubanTopicItemMongoPipeline(object):
 
 
 class DoubanUserPipeline(object):
-
+    '''用户user数据，存储在mongodb中'''
     @classmethod
     def from_settings(cls, settings):
         cls.mongo_host = settings['MONGODB_HOST']
@@ -117,6 +118,7 @@ class DoubanUserPipeline(object):
 
     def process_item(self, item, spider):
         # if isinstance(item, dict):
+        # 判断item类型，因为topicitem也是字典，虽然继承了TopicItemsItem，但部分item传递过来竟也是字典，因此多加一个属性判断
         if type(item) == dict and hasattr(item, 'location'):
             user = self.collection.find_one({'_id': item['_id']})
             if not user:
@@ -135,34 +137,3 @@ class DoubanUserPipeline(object):
                 )
         return item
 
-# {
-#             '_id':'0000000',
-#             'name':'',
-#             'uid':'',
-#             'reg_time':'',
-#             'location':{
-#                 'city_id':'',
-#                 'city':'',
-#             },
-#             'books':{
-#                 'doing':0,
-#                 'wish':0,
-#                 'collect':0,
-#             },
-#             'movies':{
-#                 'doing':0,
-#                 'wish':0,
-#                 'collect':0,
-#             },
-#             'musics':{
-#                 'doing':0,
-#                 'wish':0,
-#                 'collect':0,
-#             },
-#             'group':0,
-#             'relationship':{
-#                 'following':0,
-#                 'follower':0,
-#             },
-#             'common_with_me':0,
-#         }
