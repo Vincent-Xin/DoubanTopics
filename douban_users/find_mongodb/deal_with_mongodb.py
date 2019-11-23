@@ -1,3 +1,4 @@
+'''从数据库中读取所需数据，保存在本地，以免每次都进行数据库查询'''
 import json
 from collections import Counter
 
@@ -39,6 +40,7 @@ class GetIds():
         return id_list
 
     def deal_with_left_two(self):
+        # 此两个是在用户名中有角标数字，在使用isdigit时会带上，在spider中修改添加一个正则即可，暂不改动spider
         to_insert = [{
             '_id': 1312772,
             'name': '螃蟹|Daddy²',
@@ -124,8 +126,8 @@ class GetIds():
 if __name__ == '__main__':
     id_getter = GetIds()
     # topic_ids = id_getter.read_txt('topic_ids.txt')
-    topic_infos = id_getter.get_topic_infos()
-    id_getter.write_txt(topic_infos, 'topic_infos.txt')
+#     topic_infos = id_getter.get_topic_infos()
+#     id_getter.write_txt(topic_infos, 'topic_infos.txt')
     # id_getter.get_topic_creator_ids()
     # creator_ids = id_getter.red_ids()
     # # id_getter.deal_with_left_two()
