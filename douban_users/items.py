@@ -62,6 +62,7 @@ class TopicsItem(scrapy.Item):
         return table, item_data
 
 class TopicItemsItem(scrapy.Item):
+    # for mongodb
     _id = scrapy.Field()
     type = scrapy.Field()
     title = scrapy.Field()
@@ -81,7 +82,7 @@ class TopicItemsItem(scrapy.Item):
     share_count = scrapy.Field()
 
 # class TopicItemsItem(scrapy.Item):
-#     # 话题下发表的广播和日记等内容
+#     # 话题下发表的广播和日记等内容 forMySQL
 #     id = scrapy.Field()
 #     title_or_abstract = scrapy.Field()
 #     topic = scrapy.Field()
@@ -111,7 +112,7 @@ class TopicItemsItem(scrapy.Item):
 # class DoubanUsersItem(scrapy.Item):
 #     user = {}
 
-class DoubanUsersItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    user = {}
+# class DoubanUsersItem(scrapy.Item):
+#     # define the fields for your item here like:
+#     # name = scrapy.Field()
+#     user = {}
