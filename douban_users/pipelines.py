@@ -10,7 +10,8 @@ import motor
 import pymongo
 from pymysql import cursors
 from twisted.enterprise import adbapi
-from douban_users.items import DoubanUsersItem, TopicItemsItem
+from douban_users.items import DoubanUsersItem, TopicItemsItem, TopicsItem, TopicGalleriesItem
+
 
 class DoubanTopicPipeline(object):
 
@@ -30,7 +31,7 @@ class DoubanTopicPipeline(object):
         return cls(dbpool)
 
     def process_item(self, item, spider):
-        if not isinstance(item, dict):
+        if isinstance(item, TopicGalleriesItem):
             # 利用连接池对象，开始操作数据，将数据写入到数据库中
             query = self.dbpool.runInteraction(self.do_insert, item)
             # 如果异步任务执行失败的话，可以通过ErrBack()进行监听, 给insert添加一个执行失败的回调事件
@@ -46,23 +47,57 @@ class DoubanTopicPipeline(object):
         # 组建语句和参数
         keys = ', '.join(dict_data.keys())
         value_holders = ', '.join(['%s'] * len(dict_data))
-        if isinstance(item, TopicItemsItem):
-            if dict_data['author'] and dict_data['topic']:
-                updater = ', '.join([f'{key}=%s' for key in dict_data.keys()][1:-1])
-                params = tuple(dict_data.values()) + tuple(dict_data.values())[1:-1]
-            else:
-                updater = 'collect_count=%s'
-                param_deal = list(dict_data.values()) + [dict_data['collect_count']]
-                params = tuple(param_deal)
-        else:
-            updater = ', '.join([f'{key}=%s' for key in dict_data.keys()][1:])
-            params = tuple(dict_data.values()) + tuple(dict_data.values())[1:]
+        # if isinstance(item, TopicItemsItem):
+        #     if dict_data['author'] and dict_data['topic']:
+        #         updater = ', '.join([f'{key}=%s' for key in dict_data.keys()][1:-1])
+        #         params = tuple(dict_data.values()) + tuple(dict_data.values())[1:-1]
+        #     else:
+        #         updater = 'collect_count=%s'
+        #         param_deal = list(dict_data.values()) + [dict_data['collect_count']]
+        #         params = tuple(param_deal)
+        # else:
+        #     updater = ', '.join([f'{key}=%s' for key in dict_data.keys()][1:])
+        #     params = tuple(dict_data.values()) + tuple(dict_data.values())[1:]
+
+        updater = ', '.join([f'{key}=%s' for key in dict_data.keys()][1:])
+        params = tuple(dict_data.values()) + tuple(dict_data.values())[1:]
         insert_sql = f'INSERT INTO {table}({keys}) VALUES({value_holders}) ON DUPLICATE KEY UPDATE {updater}'
         # 执行插入语句
         cursor.execute(insert_sql, params)
 
-    # def process_item(self, item, spider):
-    #     return item
+
+class DoubanTopicItemMongoPipeline(object):
+
+    @classmethod
+    def from_settings(cls, settings):
+        cls.mongo_host = settings['MONGODB_HOST']
+        cls.db_name = settings['MONGODB_NAME']
+        return cls()
+
+    def open_spider(self, spider):
+        self.client = pymongo.MongoClient(self.mongo_host)
+        self.db = self.client[self.db_name]
+        self.collection = self.db['topic_items']
+
+    def close_spider(self, spider):
+        self.client.close()
+
+    def process_item(self, item, spider):
+        if isinstance(item, TopicItemsItem):
+            item = dict(item)
+            topic_item = self.collection.find_one({'_id': item['_id']})
+            if not topic_item:
+                result = self.collection.insert_one(item)
+            else:
+                result = self.collection.update_one(
+                    topic_item, {'$set': {'praise_count': item['praise_count'],
+                                          'comment_count': item['comment_count'],
+                                          'share_count': item['share_count'],
+                                          }
+                                 }
+                )
+        return item
+
 
 class DoubanUserPipeline(object):
 
@@ -75,14 +110,59 @@ class DoubanUserPipeline(object):
     def open_spider(self, spider):
         self.client = pymongo.MongoClient(self.mongo_host)
         self.db = self.client[self.db_name]
-        self.collection = self.db['douban_users']
+        self.collection = self.db['douban_topic_creators']
 
     def close_spider(self, spider):
         self.client.close()
 
     def process_item(self, item, spider):
-        if isinstance(item, dict):
-            user = self.collection.find_one({'id': item['id']})
+        # if isinstance(item, dict):
+        if type(item) == dict and hasattr(item, 'location'):
+            user = self.collection.find_one({'_id': item['_id']})
             if not user:
                 result = self.collection.insert_one(item)
+            else:
+                result = self.collection.update_one(
+                    user, {'$set': {'location': item['location'],
+                                    'books': item['books'],
+                                    'movies': item['movies'],
+                                    'musics': item['musics'],
+                                    'group': item['group'],
+                                    'relationship': item['relationship'],
+                                    'common_with_me': item['common_with_me'],
+                                    }
+                           }
+                )
         return item
+
+# {
+#             '_id':'0000000',
+#             'name':'',
+#             'uid':'',
+#             'reg_time':'',
+#             'location':{
+#                 'city_id':'',
+#                 'city':'',
+#             },
+#             'books':{
+#                 'doing':0,
+#                 'wish':0,
+#                 'collect':0,
+#             },
+#             'movies':{
+#                 'doing':0,
+#                 'wish':0,
+#                 'collect':0,
+#             },
+#             'musics':{
+#                 'doing':0,
+#                 'wish':0,
+#                 'collect':0,
+#             },
+#             'group':0,
+#             'relationship':{
+#                 'following':0,
+#                 'follower':0,
+#             },
+#             'common_with_me':0,
+#         }

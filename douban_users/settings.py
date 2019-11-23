@@ -24,16 +24,20 @@ ROBOTSTXT_OBEY = False
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32
 
+DEPTH_LIMIT = 20
+
+# COOKIES_DEBUG = True
+
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
 DOWNLOAD_DELAY = 5
 # The download delay setting will honor only one of:
-#CONCURRENT_REQUESTS_PER_DOMAIN = 16
-#CONCURRENT_REQUESTS_PER_IP = 16
+# CONCURRENT_REQUESTS_PER_DOMAIN = 8
+# CONCURRENT_REQUESTS_PER_IP = 16
 
 # Disable cookies (enabled by default)
-#COOKIES_ENABLED = False
+# COOKIES_ENABLED = True
 
 # Disable Telnet Console (enabled by default)
 #TELNETCONSOLE_ENABLED = False
@@ -56,6 +60,7 @@ DEFAULT_REQUEST_HEADERS = {
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
    'douban_users.middlewares.DoubanTopicDownloaderMiddleware': 200,
+   # 'douban_users.middlewares.UserSeleniumDownloaderMiddleWare': 150,
    # 'douban_users.middlewares.RandomProxyDownloaderMiddleware': 300,
 
 }
@@ -69,8 +74,9 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-   'douban_users.pipelines.DoubanTopicPipeline': 200,
-   'douban_users.pipelines.DoubanUserPipeline': 300,
+   # 'douban_users.pipelines.DoubanTopicPipeline': 300,
+   # 'douban_users.pipelines.DoubanUserPipeline': 201,
+   'douban_users.pipelines.DoubanTopicItemMongoPipeline': 200,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -97,7 +103,7 @@ ITEM_PIPELINES = {
 MYSQL_HOST = 'localhost'
 MYSQL_DBNAME = 'python_spider'
 MYSQL_USER = 'root'
-MYSQL_PASSWORD = '123456'
+MYSQL_PASSWORD = 'xinyuanchang'
 MYSQL_PORT = 3306
 
 MONGODB_HOST = 'mongodb://localhost:27017/'

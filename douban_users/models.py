@@ -33,6 +33,7 @@ class TopicItems(BaseModel):
     # 发表的广播和日记等话题下内容
     id = CharField(primary_key=True)
     title_or_abstract = CharField(verbose_name="日记题目或者广播摘要")
+    text = TextField(verbose_name="内容")
     topic = IntegerField(default=0, verbose_name="所属话题id")
     author = IntegerField(default=0, verbose_name="作者")
     create_time = DateTimeField(default='', verbose_name="发布时间")

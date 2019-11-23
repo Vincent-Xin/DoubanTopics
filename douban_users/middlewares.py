@@ -4,11 +4,15 @@
 #
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
-from random import choice
+import json
+import time
 
 from scrapy import signals
+from scrapy.http import HtmlResponse
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
-from douban_users.proxy import GetIP
+from douban_users.units.proxy import GetIP
 
 
 class DoubanUsersSpiderMiddleware(object):
@@ -108,24 +112,50 @@ class DoubanUsersDownloaderMiddleware(object):
 
 class DoubanTopicDownloaderMiddleware(object):
     def __init__(self):
-        self.headers = [
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.75 Safari/537.36',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Safari/605.1.15',
-        ]
+        self.user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.97 Safari/537.36'
+        with open("douban_users/cookies/request_cookies.txt", 'r') as fr:
+            cookies = json.loads(fr.read())
+        self.cookies = cookies
 
     def process_request(self, request, spider):
-        request.headers['User-Agent'] = self.headers[choice(range(len(self.headers)))]
-        if 'rexxar/api/v2/gallery/topic' in request.url:
-            topic_id = request.meta['topicid']
-#             request.headers['Cookie'] = my_cookies
-            request.headers['Connection'] = 'keep-alive'
-            request.headers['Content-Type'] = 'application/x-www-form-urlencoded'
-            request.headers['Host'] = 'm.douban.com'
-            request.headers['Origin'] = 'https://www.douban.com'
-            request.headers['Referer'] = f'https://www.douban.com/gallery/topic/{topic_id}/?=undefined&sort=new'
-            request.headers['Sec-Fetch-Mode'] = 'cors'
-            request.headers['Sec-Fetch-Site'] = 'same-site'
+        if spider.name == 'topics' or 'topicitems':
+            request.headers['User-Agent'] = self.user_agent
+            request.cookies = self.cookies
+            if 'rexxar/api/v2/gallery/topic' in request.url:
+                topic_id = request.meta['topic_id']
+                request.headers['Connection'] = 'keep-alive'
+                request.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+                request.headers['Host'] = 'm.douban.com'
+                request.headers['Origin'] = 'https://www.douban.com'
+                request.headers['Referer'] = f'https://www.douban.com/gallery/topic/{topic_id}/?from=discussing'
+                request.headers['Sec-Fetch-Mode'] = 'cors'
+                request.headers['Sec-Fetch-Site'] = 'same-site'
+
+class UserSeleniumDownloaderMiddleWare(object):
+    def __init__(self):
+        chrome_options = Options()
+        # 设置headless模式
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--disable-gpu')
+        # 设置不加载图片
+        chrome_options.add_argument('blink-settings=imagesEnabled=false')
+        self.browser = webdriver.Chrome(executable_path="/usr/local/bin/chromedriver", options=chrome_options)
+        with open("douban_users/cookies/cookies_selenium.txt", 'r') as fr:
+            cookies = json.loads(fr.read())
+        self.browser.get('https:www.douban.com')
+        for cookie_dict in cookies:
+            self.browser.add_cookie(cookie_dict)
+
+    # def __del__(self):
+    #     self.browser.close()
+
+    def process_request(self, request, spider):
+        if spider.name == 'topic_creators':
+            self.browser.get(request.url)
+            time.sleep(2)
+            html = self.browser.page_source
+            return HtmlResponse(url=self.browser.current_url, body=html, request=request, encoding='utf8')
+
 
 class RandomProxyDownloaderMiddleware(object):
     #动态设置ip代理
